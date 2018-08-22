@@ -1,22 +1,29 @@
 import random
-import string
 
 class Mimicker:
 
-    replacementInSecond = {',': ' ,', ';': ' ;',
-                           ':': ' :', '?': ' ?',
-                           '!': ' !', '.': ' . '}
+    #table to replace out difficult punctuation with empty string or space
     replacementInFirst = {'Prof.': 'Prof', 'Dr.': 'Dr',
                           'Mr.': 'Mr', 'Mrs.': 'Mrs',
                           'Ms.': 'Ms', '\n': ' ',
                           '"': ' ', '“': ' ',
                           '”': ' ', '(': ' ',
-                          ')': ' ', '—': ' '}
+                          ')': ' ', '—': ' ',
+                          '...': 'ELIPSE.'}
+    #table to replace to put space before significant punctuation 
+    replacementInSecond = {',': ' ,', ';': ' ;',
+                           ':': ' :', '?': ' ?',
+                           '!': ' !', '.': ' . '}
+    #table to replace out space after sig. punc. at very end
     replacementOut = {' ;': ';', ' :': ':',
-                      ' ,': ',', ' .': '.'}
+                      ' ,': ',', ' .': '.',
+                      'ELIPSE': '..'}
+    #custom list of punctuation
     punctuation = '!"#$%&\'()*+,./:;<=>?@[\\]^_`{|}~—'
-    
+
     def __init__(self, filename):
+
+        #initialize variables
         self.filename = filename
         self.wordList = []
         self.firstWord = []
@@ -24,34 +31,44 @@ class Mimicker:
         self.permaCaps = ['I']
         self.wordDict = {}
         self.sentenceList = []
+
+        #call methods to generate data structures
         self.clean()
         self.findFirstWords()
         self.findLastWords()
         self.findPermaCaps()
         self.makeDict()
 
+    #import file, clean text, generate wordList: ordered list of words in text
     def clean(self):
+
+        #import txt file
         infile = open(self.filename)
         blockString = infile.read()
         infile.close()
 
+        #use first replacement table
         for key in self.replacementInFirst:
             blockString = blockString.replace(key, self.replacementInFirst[key])
 
+        #remove words with '.' in middle
+        #remove single char words that end in '.' (like 'M.D.', 'P.A.')
         tempList = blockString.split()
         tempListCopy = tempList[:]
         for word in tempListCopy:
             if '.' in word[0:-1]:
-                #if word[-1] not in self.punctuation:
                 tempList.remove(word)
             if len(word) == 2 and word[1] == '.':
                 tempList.remove(word)
-
         blockString = ' '.join(tempList)
 
+        #use second replacement table
         for key in self.replacementInSecond:
             blockString = blockString.replace(key, self.replacementInSecond[key])
 
+        #split block string into list of words
+        #note: these punctuations . , : ; ? ! are treated as words!
+        #remove accidental successive punctuations, one at a time between words
         self.wordList = blockString.split()
         delList = []
         for i in range(2,len(self.wordList)-1):
@@ -61,19 +78,25 @@ class Mimicker:
         while len(delList) > 0:
             del self.wordList[delList.pop()]
 
+        #self.wordList is a list of every word in sample text, in order
+
     def findFirstWords(self):
+        #generate list self.firstWord of first word in each sentence
         self.firstWord.append(self.wordList[0])
         for i in range(len(self.wordList) - 1):
             if self.wordList[i] == '.' or self.wordList[i] == '?' or self.wordList[i] == '!':
-                if self.wordList[i+1] not in string.punctuation:
+                if self.wordList[i+1] not in self.punctuation:
                     self.firstWord.append(self.wordList[i+1])
 
     def findLastWords(self):
+        #generate list self.lastWord of last word in each sentence
         for i in range(1,len(self.wordList)):
             if self.wordList[i] == '.' or self.wordList[i] == '?' or self.wordList[i] == '!':
                 self.lastWord.append(self.wordList[i-1])
 
     def findPermaCaps(self):
+        #generate list self.permaCaps of words that always appear capitalized
+        #work for initial caps and total caps
         wordSet = set(self.wordList)
         uniqueWordList = list(wordSet)
         uniqueWordList.sort()
@@ -83,6 +106,9 @@ class Mimicker:
                     self.permaCaps.append(word)
 
     def makeDict(self):
+        #make each unique word a key in the dictionary wordDict
+        #make each key's value a list
+        #replete list with each word that follows that key anywhere in text
         for i in range (len(self.wordList) - 1):
             key = self.wordList[i]
             val = self.wordList[i+1]
@@ -100,6 +126,13 @@ class Mimicker:
                 self.wordDict[key].append(val)
 
     def makeSentence(self):
+        #choose random element of list of first words
+        #choose random member of that words value list in wordDict
+        #continue until hitting end punctuation or 25 words
+        #if last word not valid, exit
+        #if valid, use replacement table out
+        #ensure period at end and capitalization at start
+        #push sentence onto sentenceList
         first = random.choice(self.firstWord)
         if first not in self.permaCaps:
             first = first.lower()
@@ -109,7 +142,7 @@ class Mimicker:
             while i < len(retList):
                 nextWord = random.choice(self.wordDict[retList[i]])
                 retList.append(nextWord)
-                if nextWord == '.' or nextWord == '?':
+                if nextWord == '.' or nextWord == '?' or nextWord == '!':
                     if len(retList) > 8:
                         break
                 if len(retList) > 25:
@@ -132,13 +165,10 @@ class Mimicker:
         self.sentenceList.append(retString)
 
     def makeParagraph(self, num = 5):
+        #call self.makeSentence until sentenceList has length num
+        #join into single string, reset var, and return
         while len(self.sentenceList) <= num:
             self.makeSentence()
         ret = ' '.join(self.sentenceList)
         self.sentenceList = []
         return ret
-        
-
-        
-                            
-        
