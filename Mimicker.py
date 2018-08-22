@@ -3,15 +3,15 @@ import string
 
 class Mimicker:
 
-    replacementIn = {'Prof': 'Prof', 'Dr.': 'Dr',
-                   'Mr.': 'Mr', 'Mrs.': 'Mrs',
-                   'Ms.': 'Ms', '\n': ' ',
-                   ',': ' ,', ';': ' :',
-                   ':': ' :', '?': ' ?',
-                   '!': ' !', '.': ' . ',
-                   '"': ' ', '“': ' ',
-                   '”': ' ', '(': ' ',
-                   ')': ' ', '—': ' '}
+    replacementInSecond = {',': ' ,', ';': ' ;',
+                           ':': ' :', '?': ' ?',
+                           '!': ' !', '.': ' . '}
+    replacementInFirst = {'Prof.': 'Prof', 'Dr.': 'Dr',
+                          'Mr.': 'Mr', 'Mrs.': 'Mrs',
+                          'Ms.': 'Ms', '\n': ' ',
+                          '"': ' ', '“': ' ',
+                          '”': ' ', '(': ' ',
+                          ')': ' ', '—': ' '}
     replacementOut = {' ;': ';', ' :': ':',
                       ' ,': ',', ' .': '.'}
     punctuation = '!"#$%&\'()*+,./:;<=>?@[\\]^_`{|}~—'
@@ -20,11 +20,13 @@ class Mimicker:
         self.filename = filename
         self.wordList = []
         self.firstWord = []
+        self.lastWord = []
         self.permaCaps = ['I']
         self.wordDict = {}
         self.sentenceList = []
         self.clean()
         self.findFirstWords()
+        self.findLastWords()
         self.findPermaCaps()
         self.makeDict()
 
@@ -33,27 +35,43 @@ class Mimicker:
         blockString = infile.read()
         infile.close()
 
+        for key in self.replacementInFirst:
+            blockString = blockString.replace(key, self.replacementInFirst[key])
+
         tempList = blockString.split()
         tempListCopy = tempList[:]
         for word in tempListCopy:
             if '.' in word[0:-1]:
+                #if word[-1] not in self.punctuation:
                 tempList.remove(word)
             if len(word) == 2 and word[1] == '.':
                 tempList.remove(word)
 
         blockString = ' '.join(tempList)
 
-        for key in self.replacementIn:
-            blockString = blockString.replace(key, self.replacementIn[key])
+        for key in self.replacementInSecond:
+            blockString = blockString.replace(key, self.replacementInSecond[key])
 
         self.wordList = blockString.split()
+        delList = []
+        for i in range(2,len(self.wordList)-1):
+            if self.wordList[i] in self.punctuation:
+                if self.wordList[i+1] in self.punctuation:
+                    delList.append(i+1)
+        while len(delList) > 0:
+            del self.wordList[delList.pop()]
 
     def findFirstWords(self):
         self.firstWord.append(self.wordList[0])
         for i in range(len(self.wordList) - 1):
-            if self.wordList[i] == '.' or self.wordList[i] == '?':
+            if self.wordList[i] == '.' or self.wordList[i] == '?' or self.wordList[i] == '!':
                 if self.wordList[i+1] not in string.punctuation:
                     self.firstWord.append(self.wordList[i+1])
+
+    def findLastWords(self):
+        for i in range(1,len(self.wordList)):
+            if self.wordList[i] == '.' or self.wordList[i] == '?' or self.wordList[i] == '!':
+                self.lastWord.append(self.wordList[i-1])
 
     def findPermaCaps(self):
         wordSet = set(self.wordList)
@@ -99,6 +117,8 @@ class Mimicker:
                 i += 1
         except:
             pass
+        if retList[-1] not in self.lastWord:
+            return
         retString = ' '.join(retList)
         for key in self.replacementOut:
             retString = retString.replace(key, self.replacementOut[key])
@@ -110,12 +130,13 @@ class Mimicker:
         if retString[0].islower():
             retString = retString[0].upper() + retString[1:]
         self.sentenceList.append(retString)
-        #return ''.join(retString[0].upper() + retString[1:])
 
     def makeParagraph(self, num = 5):
         while len(self.sentenceList) <= num:
             self.makeSentence()
-        return ' '.join(self.sentenceList)
+        ret = ' '.join(self.sentenceList)
+        self.sentenceList = []
+        return ret
         
 
         
