@@ -1,4 +1,5 @@
 import random
+import textwrap
 
 class Mimicker:
 
@@ -9,26 +10,30 @@ class Mimicker:
                           '"': ' ', '“': ' ',
                           '”': ' ', '(': ' ',
                           ')': ' ', '—': ' ',
-                          '...': 'ELIPSE.'}
+                          '...': '.'}
     #table to replace to put space before significant punctuation 
     replacementInSecond = {',': ' ,', ';': ' ;',
                            ':': ' :', '?': ' ?',
                            '!': ' !', '.': ' . '}
     #table to replace out space after sig. punc. at very end
     replacementOut = {' ;': ';', ' :': ':',
-                      ' ,': ',', ' .': '.',
-                      'ELIPSE': '..'}
-    #custom list of punctuation
+                      ' ,': ',', ' .': '.'}
+    #custom list of punctuation (does not include hyphen, includes dash)
     punctuation = '!"#$%&\'()*+,./:;<=>?@[\\]^_`{|}~—'
+
+    #list of sentence-ending punctuation (not used in current version)
+    #endPunc = '.?!'
 
     def __init__(self, filename):
 
         #initialize variables
         self.filename = filename
+        
+        #personal style to initialize empties, not necessary in general
         self.wordList = []
         self.firstWord = []
         self.lastWord = []
-        self.permaCaps = ['I']
+        self.permaCaps = []
         self.wordDict = {}
         self.sentenceList = []
 
@@ -42,17 +47,20 @@ class Mimicker:
     #import file, clean text, generate wordList: ordered list of words in text
     def clean(self):
 
-        #import txt file
-        infile = open(self.filename)
-        blockString = infile.read()
-        infile.close()
+        #import txt file, throw exception if bad input
+        try:
+            infile = open(self.filename)
+            blockString = infile.read()
+            infile.close()
+        except:
+            print('I/O Error: Could not find or read file. Must be .txt')
 
         #use first replacement table
         for key in self.replacementInFirst:
             blockString = blockString.replace(key, self.replacementInFirst[key])
 
-        #remove words with '.' in middle
-        #remove single char words that end in '.' (like 'M.D.', 'P.A.')
+        #remove words with '.' in beginning or middle (like '.03' or 'I.L.')
+        #remove single char words that end in '.' (like in 'J. R. R. Tolkein')
         tempList = blockString.split()
         tempListCopy = tempList[:]
         for word in tempListCopy:
@@ -67,9 +75,10 @@ class Mimicker:
             blockString = blockString.replace(key, self.replacementInSecond[key])
 
         #split block string into list of words
-        #note: these punctuations . , : ; ? ! are treated as words!
-        #remove accidental successive punctuations, one at a time between words
+        #note: these punctuation marks . , : ; ? ! are treated as words!
         self.wordList = blockString.split()
+                  
+        #remove accidental successive punctuations, only up to one between two words
         delList = []
         for i in range(2,len(self.wordList)-1):
             if self.wordList[i] in self.punctuation:
@@ -129,6 +138,7 @@ class Mimicker:
         #choose random element of list of first words
         #choose random member of that words value list in wordDict
         #continue until hitting end punctuation or 25 words
+        #exception handling for dictionary errors: exit
         #if last word not valid, exit
         #if valid, use replacement table out
         #ensure period at end and capitalization at start
@@ -143,13 +153,15 @@ class Mimicker:
                 nextWord = random.choice(self.wordDict[retList[i]])
                 retList.append(nextWord)
                 if nextWord == '.' or nextWord == '?' or nextWord == '!':
-                    if len(retList) > 8:
+                    if len(retList) > 2:
                         break
+                    else:
+                        return
                 if len(retList) > 25:
                     break
                 i += 1
         except:
-            pass
+            return
         if retList[-1] not in self.lastWord:
             return
         retString = ' '.join(retList)
@@ -166,8 +178,8 @@ class Mimicker:
 
     def makeParagraph(self, num = 5):
         #call self.makeSentence until sentenceList has length num
-        #join into single string, reset var, and return
-        while len(self.sentenceList) <= num:
+        #join into single string, reset var, and return paragraph
+        while len(self.sentenceList) < num:
             self.makeSentence()
         ret = ' '.join(self.sentenceList)
         self.sentenceList = []
