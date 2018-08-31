@@ -1,6 +1,8 @@
 import random
-import textwrap
-
+#import textwrap
+from tkinter import Tk, Label, Button, Frame, Entry, LEFT
+from tkinter.messagebox import showinfo
+            
 class Mimicker:
 
     #table to replace out difficult punctuation with empty string or space
@@ -184,3 +186,36 @@ class Mimicker:
         ret = ' '.join(self.sentenceList)
         self.sentenceList = []
         return ret
+
+class tki(Frame):
+    def __init__(self, parent = None):
+        Frame.__init__(self, parent)
+        self.pack()
+        self.text = ''
+        self.make_widgets()
+        self.mimicker = ''
+
+    def make_widgets(self):
+        self.textlabel = Label(self, text = '{}'.format(self.text), wraplength = 500, justify = LEFT)
+        self.textlabel.pack()
+        Label(self, text = 'Enter text source file:').pack()
+        self.ent = Entry(self)
+        self.ent.focus()
+        self.ent.pack()
+        self.clicker = Button(self, text = 'Generate', command = lambda:self.generate())
+        self.clicker.pack()
+
+    def generate(self):
+        try:
+            self.mimicker = Mimicker(self.ent.get())
+            self.text = '      ' + self.mimicker.makeParagraph()
+            self.updateLabel()
+        except:
+            showinfo(title = '', message = 'IO Error, try again with .txt file')
+
+    def updateLabel(self):
+        self.textlabel.config(text = '{}'.format(self.text))
+                
+root = Tk()
+my_gui = tki(root)
+root.mainloop()
